@@ -15,7 +15,7 @@ effacer une alerte critique) ; si le juge ne peut pas répondre (réseau, quota)
 ## Le juge intégré : rien à configurer
 
 Sans option, `hg.audit(bot)` et `healthy-guard run` utilisent le **juge intégré** de HealthyGuard. Vous n'avez ni modèle, ni serveur, ni jeton à fournir ; les rapports
-indiquent seulement « juge HealthyGuard ». Il est fourni par un service hébergé (voir [héberger le juge](heberger-le-juge.md)). Tant que ce service n'est pas
+indiquent seulement « juge HealthyGuard ». Il est fourni par un service hébergé (voir [héberger le juge](heberger-le-juge.md)) : aucun identifiant à saisir pour le juge. Tant que ce service n'est pas
 configuré dans votre installation, l'audit retombe sur les **règles seules**, avec un avertissement : gratuit et sans réseau, mais approximatif (faux positifs et faux négatifs).
 
 ### Ce qui est envoyé au juge

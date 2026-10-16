@@ -115,7 +115,7 @@ def assisted_judge(profile: dict | ChatbotAdapter, *, rules: bool = True, escala
     return AssistedJudge(llm, KeywordJudge(), escalate_critical=escalate_critical) if rules else llm
 
 
-# Le juge intégré : un service hébergé pour HealthyGuard (voir server/judge_gateway.py). Le package ne contient AUCUN jeton ni nom de modèle :
+# Le juge intégré : un service hébergé pour HealthyGuard (voir server/app.py). Le package ne contient AUCUN jeton ni nom de modèle :
 # l'adresse de la passerelle est publique et sans secret. Elle se règle une fois déployée (ou par HEALTHYGUARD_JUDGE_URL).
 HOSTED_JUDGE_URL = ""
 JUDGE_ALIAS = "healthyguard-judge"
