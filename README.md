@@ -6,7 +6,7 @@ langage comme pour un chatbot classique (à règles ou à intentions). HealthyGu
 batterie de tests avant son déploiement, attribue un statut normalisé à chaque contrôle, calcule des
 statistiques, puis rend une décision globale : **autoriser, soumettre à revue humaine, ou bloquer**.
 
-> ⚠️ **HealthyGuard ne remplace pas la relecture clinique.** Les cas de test, les phrases interdites et
+> **HealthyGuard ne remplace pas la relecture clinique.** Les cas de test, les phrases interdites et
 > les critères de sécurité clinique ont été rédigés sans validation par des professionnels de santé : ils
 > doivent être relus avant tout audit réel. Les verdicts automatiques (règles ou modèle de langage) sont
 > des aides à la décision ; les cas « revue humaine » exigent un humain.
