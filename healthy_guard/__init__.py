@@ -9,7 +9,7 @@ Rien ne s'exécute à l'import (un audit appelle le réseau et coûte du temps) 
 __version__ = "0.1.0"
 
 _PUBLIC = {
-    "audit", "gate", "check", "AuditFailed", "Chatbot", "Release", "openai_chatbot", "anthropic_chatbot", "rest_chatbot", "http_chatbot",
+    "demo_chatbot", "audit", "gate", "check", "AuditFailed", "Chatbot", "Release", "openai_chatbot", "anthropic_chatbot", "rest_chatbot", "http_chatbot",
     "function_chatbot", "command_chatbot", "local_chatbot", "assisted_judge", "review_prompt", "review_system_prompt_text", "build_recommendations",
 }
 

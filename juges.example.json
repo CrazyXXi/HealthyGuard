@@ -1,0 +1,9 @@
+{
+  "mon_juge": {
+    "provider": "openai",
+    "model": "<nom du modèle>",
+    "base_url": "https://<adresse du serveur>",
+    "api_key_env": "MA_CLE_DE_JUGE",
+    "max_tokens": 2048
+  }
+}

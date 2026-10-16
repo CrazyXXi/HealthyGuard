@@ -1,16 +1,16 @@
 """Profils de juges : plusieurs modèles, chacun avec son propre serveur et son propre jeton.
 
-Un jury peut mêler un modèle hébergé chez vous (GLM sur Modal) et un service (Gemini) : chacun a son adresse, sa
+Un jury peut mêler un modèle hébergé chez vous et un service (Gemini) : chacun a son adresse, sa
 variable de jeton et ses paramètres. Ils se déclarent dans un fichier JSON (sans secret : seulement le NOM de la variable
 d'environnement qui contient le jeton) :
 
-    {"glm":    {"provider": "openai", "model": "zai-org/GLM-5.3-Flash",
-                "base_url": "https://mon-endpoint.modal.direct", "api_key_env": "MODAL_TOKEN",
+    {"local":  {"provider": "openai", "model": "mon-modele",
+                "base_url": "https://mon-serveur.example", "api_key_env": "MA_CLE_DE_JUGE",
                 "extra_body": {"reasoning_effort": "low"}, "max_tokens": 2048},
      "gemini": {"provider": "openai", "model": "gemini-3.1-flash-lite",
                 "base_url": "https://generativelanguage.googleapis.com/v1beta/openai", "api_key_env": "GEMINI_API_KEY"}}
 
-puis `--judges-config juges.json --judge-panel keyword,glm,gemini`.
+puis `--judges-config juges.json --judge-panel keyword,local,gemini`.
 """
 from __future__ import annotations
 

@@ -37,8 +37,8 @@ def server(monkeypatch):
 
 def test_env_file_parsing(tmp_path):
     path = tmp_path / ".env"
-    path.write_text('﻿# jetons\n\nMODAL_TOKEN="wk-1.ws-2"\nexport AUTRE=valeur avec espaces  \nSIMPLE=\'x\'\nVIDE=\n', encoding="utf-8")
-    assert parse_env_file(path) == {"MODAL_TOKEN": "wk-1.ws-2", "AUTRE": "valeur avec espaces", "SIMPLE": "x", "VIDE": ""}
+    path.write_text('﻿# jetons\n\nJUDGE_TOKEN="wk-1.ws-2"\nexport AUTRE=valeur avec espaces  \nSIMPLE=\'x\'\nVIDE=\n', encoding="utf-8")
+    assert parse_env_file(path) == {"JUDGE_TOKEN": "wk-1.ws-2", "AUTRE": "valeur avec espaces", "SIMPLE": "x", "VIDE": ""}
 
 
 def test_env_file_never_overrides_and_returns_only_names(tmp_path, monkeypatch):
@@ -70,20 +70,20 @@ def test_gitignore_protects_env_files():
 # --- adaptateur : paramètres du serveur et jeton composite ------------------------------------------------
 
 def test_server_parameters_and_composite_token_are_sent(server, monkeypatch):
-    monkeypatch.setenv("MODAL_TOKEN", TOKEN)
-    adapter = OpenAICompatibleAdapter("zai-org/GLM-5.3-Flash", api_key_env="MODAL_TOKEN", base_url=server, max_tokens=2048,
+    monkeypatch.setenv("JUDGE_TOKEN", TOKEN)
+    adapter = OpenAICompatibleAdapter("modele-heberge", api_key_env="JUDGE_TOKEN", base_url=server, max_tokens=2048,
                                       extra_body={"reasoning_effort": "none", "top_p": 0.9})
     assert adapter.send([{"role": "user", "content": "Bonjour"}]).text == "Réponse OpenAI"
     sent = REQUESTS[0]
     assert sent["headers"]["authorization"] == f"Bearer {TOKEN}"
     assert sent["payload"]["reasoning_effort"] == "none" and sent["payload"]["top_p"] == 0.9
-    assert sent["payload"]["max_tokens"] == 2048 and sent["payload"]["model"] == "zai-org/GLM-5.3-Flash"
+    assert sent["payload"]["max_tokens"] == 2048 and sent["payload"]["model"] == "modele-heberge"
 
 
 @pytest.mark.parametrize("given, expected", [
-    ("https://labyrinth-n1--ep-glm.us-west.modal.direct", "https://labyrinth-n1--ep-glm.us-west.modal.direct/v1"),
-    ("https://labyrinth-n1--ep-glm.us-west.modal.direct/", "https://labyrinth-n1--ep-glm.us-west.modal.direct/v1"),
-    ("https://labyrinth-n1--ep-glm.us-west.modal.direct/v1", "https://labyrinth-n1--ep-glm.us-west.modal.direct/v1"),
+    ("https://mon-serveur.example", "https://mon-serveur.example/v1"),
+    ("https://mon-serveur.example/", "https://mon-serveur.example/v1"),
+    ("https://mon-serveur.example/v1", "https://mon-serveur.example/v1"),
     ("https://generativelanguage.googleapis.com/v1beta/openai", "https://generativelanguage.googleapis.com/v1beta/openai"),
     ("http://127.0.0.1:8000/mon/chemin/", "http://127.0.0.1:8000/mon/chemin"),
 ])
@@ -92,9 +92,9 @@ def test_a_bare_host_gets_the_standard_v1_route_and_other_paths_are_untouched(gi
 
 
 def test_a_bare_host_reaches_the_v1_route(server, monkeypatch):
-    monkeypatch.setenv("MODAL_TOKEN", TOKEN)
+    monkeypatch.setenv("JUDGE_TOKEN", TOKEN)
     bare = server.removesuffix("/v1")
-    OpenAICompatibleAdapter("m", api_key_env="MODAL_TOKEN", base_url=bare).send([{"role": "user", "content": "x"}])
+    OpenAICompatibleAdapter("m", api_key_env="JUDGE_TOKEN", base_url=bare).send([{"role": "user", "content": "x"}])
     assert REQUESTS[0]["path"] == "/v1/chat/completions"
 
 
@@ -106,8 +106,8 @@ def test_server_parameters_cannot_override_the_conversation():
 
 
 def test_description_records_server_parameters_but_not_the_token(monkeypatch):
-    monkeypatch.setenv("MODAL_TOKEN", TOKEN)
-    description = json.dumps(OpenAICompatibleAdapter("m", api_key_env="MODAL_TOKEN",
+    monkeypatch.setenv("JUDGE_TOKEN", TOKEN)
+    description = json.dumps(OpenAICompatibleAdapter("m", api_key_env="JUDGE_TOKEN",
                                                      extra_body={"reasoning_effort": "none"}).describe())
     assert "reasoning_effort" in description and SECRET not in description and "wk-ID123" not in description
 
@@ -115,12 +115,12 @@ def test_description_records_server_parameters_but_not_the_token(monkeypatch):
 # --- de bout en bout : .env -> audit -> rapport sans secret ----------------------------------------------------
 
 def test_cli_audit_of_a_hosted_model_leaves_no_secret_behind(server, tmp_path, capsys, monkeypatch):
-    monkeypatch.delenv("MODAL_TOKEN", raising=False)
-    env = tmp_path / "modal.env"
-    env.write_text(f'MODAL_TOKEN="{TOKEN}"\n', encoding="utf-8")
+    monkeypatch.delenv("JUDGE_TOKEN", raising=False)
+    env = tmp_path / "juge.env"
+    env.write_text(f'JUDGE_TOKEN="{TOKEN}"\n', encoding="utf-8")
     out, html = tmp_path / "r.json", tmp_path / "r.html"
-    code = main(["audit", "--adapter", "openai", "--base-url", server, "--model", "zai-org/GLM-5.3-Flash",
-                 "--api-key-env", "MODAL_TOKEN", "--env-file", str(env), "--max-tokens", "2048",
+    code = main(["audit", "--adapter", "openai", "--base-url", server, "--model", "modele-heberge",
+                 "--api-key-env", "JUDGE_TOKEN", "--env-file", str(env), "--max-tokens", "2048",
                  "--extra-body", '{"reasoning_effort": "none"}', "--pillars", "consent", "--limit", "3",
                  "--concurrency", "3", "--out", str(out), "--html", str(html), "--quiet"])
     assert code in (0, 1, 2)
@@ -129,7 +129,7 @@ def test_cli_audit_of_a_hosted_model_leaves_no_secret_behind(server, tmp_path, c
     captured = capsys.readouterr()
     everything = out.read_text(encoding="utf-8") + html.read_text(encoding="utf-8") + captured.out + captured.err
     assert SECRET not in everything and "wk-ID123" not in everything          # le secret n'est nulle part
-    assert "MODAL_TOKEN" in captured.err                                      # on cite le NOM de la variable chargée
+    assert "JUDGE_TOKEN" in captured.err                                      # on cite le NOM de la variable chargée
     report = json.loads(out.read_text(encoding="utf-8"))
     assert report["metadata"]["chatbot"]["extra_body"] == {"reasoning_effort": "none"}
     assert report["metadata"]["settings"]["concurrency"] == 3
@@ -150,10 +150,10 @@ def test_cli_hosted_model_configuration_errors(argv, message, capsys):
 
 
 def test_server_parameters_can_be_read_from_a_file(server, tmp_path, monkeypatch):
-    monkeypatch.setenv("MODAL_TOKEN", TOKEN)
+    monkeypatch.setenv("JUDGE_TOKEN", TOKEN)
     params = tmp_path / "params.json"
     params.write_text('{"reasoning_effort": "none"}', encoding="utf-8")
-    main(["audit", "--adapter", "openai", "--base-url", server, "--model", "m", "--api-key-env", "MODAL_TOKEN",
+    main(["audit", "--adapter", "openai", "--base-url", server, "--model", "m", "--api-key-env", "JUDGE_TOKEN",
           "--extra-body", f"@{params}", "--pillars", "consent", "--limit", "1", "--out", str(tmp_path / "r.json"), "--quiet"])
     assert REQUESTS and REQUESTS[0]["payload"]["reasoning_effort"] == "none"
     assert main(["audit", "--adapter", "openai", "--model", "m", "--extra-body", "@absent.json", "--quiet"]) == 64

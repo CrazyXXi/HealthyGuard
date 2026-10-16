@@ -5,8 +5,8 @@
     bot = hg.openai_chatbot("gemini-3.1-flash-lite", base_url="https://generativelanguage.googleapis.com/v1beta/openai",
                             api_key_env="GEMINI_API_KEY")
     release = hg.audit(bot, system_prompt=open("prompt_systeme.txt").read(), name="Assistant santé",
-                       judge=hg.assisted_judge({"provider": "openai", "model": "zai-org/GLM-5.3-Flash",
-                                                "base_url": "https://…modal.direct", "api_key_env": "MODAL_TOKEN"}),
+                       judge=hg.assisted_judge({"provider": "openai", "model": "<modèle>", "base_url": "https://<serveur>",
+                                                "api_key_env": "MA_CLE_DE_JUGE"}),     # facultatif : un juge intégré est fourni
                        output_dir="reports")
     hg.gate(bot, system_prompt=...)      # lève AuditFailed si le chatbot ne peut pas être publié : à mettre dans vos tests ou votre CI
 
@@ -15,6 +15,7 @@ explicitement (cette fonction, la commande `healthy-guard run`, ou `gate` dans u
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from healthy_guard.adapters.base import ChatbotAdapter
@@ -34,7 +35,7 @@ from healthy_guard.pipeline import Release, run_release_audit
 from healthy_guard.promptreview import PromptReview, review_prompt
 from healthy_guard.recommendations import build_recommendations
 
-__all__ = ["audit", "gate", "check", "AuditFailed", "Chatbot", "Release", "openai_chatbot", "anthropic_chatbot", "rest_chatbot",
+__all__ = ["demo_chatbot", "audit", "gate", "check", "AuditFailed", "Chatbot", "Release", "openai_chatbot", "anthropic_chatbot", "rest_chatbot",
            "http_chatbot", "function_chatbot", "command_chatbot", "local_chatbot", "assisted_judge", "review_prompt", "build_recommendations"]
 
 
@@ -50,7 +51,7 @@ class AuditFailed(Exception):
 
 def openai_chatbot(model: str, *, base_url: str | None = None, api_key_env=UNSET, system: str | None = None,
                    temperature: float = 0.0, max_tokens: int | None = None, extra_body: dict | None = None, **network) -> OpenAICompatibleAdapter:
-    """Modèle derrière une API de type OpenAI : OpenAI, Gemini, GLM sur Modal, vLLM, Mistral, Ollama, LM Studio...
+    """Modèle derrière une API de type OpenAI : OpenAI, Gemini, vLLM, Mistral, Ollama, LM Studio...
 
     Clé d'API : lue dans `api_key_env`. Par défaut OPENAI_API_KEY pour OpenAI, AUCUNE pour toute autre adresse (serveur local ou interne) ;
     `api_key_env=None` force l'absence de clé.
@@ -89,6 +90,14 @@ def http_chatbot(url: str, **options) -> HttpJsonAdapter:
     return HttpJsonAdapter(url, **options)
 
 
+def demo_chatbot(kind: str = "flawed") -> ChatbotAdapter:
+    """Un faux chatbot pour essayer HealthyGuard sans clé, sans réseau : « flawed » (avec défauts) ou « good » (sans défaut)."""
+    from healthy_guard.adapters.demo import DemoChatbot
+    if kind not in ("good", "flawed"):
+        raise ValueError("kind doit valoir « good » ou « flawed ».")
+    return DemoChatbot(kind)
+
+
 def function_chatbot(fn) -> CallableAdapter:
     """Une fonction fn(messages) -> texte devient un chatbot."""
     return CallableAdapter(fn)
@@ -104,6 +113,26 @@ def assisted_judge(profile: dict | ChatbotAdapter, *, rules: bool = True, escala
     adapter = profile if isinstance(profile, ChatbotAdapter) else adapter_from_profile(validate_profile("juge", profile), network or None)
     llm = LLMJudge(adapter)
     return AssistedJudge(llm, KeywordJudge(), escalate_critical=escalate_critical) if rules else llm
+
+
+# Le juge intégré : un service hébergé pour HealthyGuard (voir server/judge_gateway.py). Le package ne contient AUCUN jeton ni nom de modèle :
+# l'adresse de la passerelle est publique et sans secret. Elle se règle une fois déployée (ou par HEALTHYGUARD_JUDGE_URL).
+HOSTED_JUDGE_URL = ""
+JUDGE_ALIAS = "healthyguard-judge"
+
+
+def default_judge() -> Judge | None:
+    """Le juge utilisé quand on n'en précise pas. L'utilisateur n'a rien à configurer : ni modèle, ni jeton, ni serveur.
+
+    Retourne None si aucune passerelle n'est configurée : l'audit se fait alors par règles seules, avec un avertissement.
+    Facultatif : HEALTHYGUARD_API_KEY si votre passerelle exige une clé.
+    """
+    url = (os.environ.get("HEALTHYGUARD_JUDGE_URL") or HOSTED_JUDGE_URL).strip()
+    if not url:
+        return None
+    profile = {"provider": "openai", "model": JUDGE_ALIAS, "base_url": url, "max_tokens": 2048,
+               "api_key_env": "HEALTHYGUARD_API_KEY" if os.environ.get("HEALTHYGUARD_API_KEY") else None}
+    return assisted_judge(profile, timeout=180)
 
 
 # --- auditer -------------------------------------------------------------------------------------------------------------------------------
@@ -137,15 +166,18 @@ def audit(chatbot, *, system_prompt: str | None = None, system_prompt_file: str 
     subject = as_chatbot(chatbot, system_prompt, str(system_prompt_file) if system_prompt_file else None, **card)
     warnings = []
     if judge is None:
+        judge = default_judge()
+    if judge is None:
         judge = KeywordJudge()
-        warnings.append("Jugement par règles seules : approximatif (faux positifs et faux négatifs). Donnez un juge modèle pour un vrai audit.")
+        warnings.append("Jugement par règles seules : approximatif (faux positifs et faux négatifs). Le juge intégré n'est pas configuré : "
+                        "définissez HEALTHYGUARD_JUDGE_URL ou donnez un juge (`judge=`) pour un vrai audit.")
     release = run_release_audit(
         subject, judge, pillars=_pillars(pillars), limit=limit, repeats=repeats, concurrency=concurrency, max_major_fails=max_major_fails,
         check_connection=check_connection, review_system_prompt=review_system_prompt,
         prompt_reviewer=llm_adapter_of(judge) if review_prompt_with_judge else None, extra_cases=extra_cases, extra_info=extra_info,
         warnings=warnings, output_dir=output_dir, name=name)
     if verbose:
-        print(release.summary())
+        print(release.summary(detail=verbose == 'detail'))
     return release
 
 

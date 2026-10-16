@@ -353,7 +353,7 @@ def test_cli_run_end_to_end(tmp_path, capsys):
     code = main(["run", "--adapter", "demo-flawed", "--system-file", str(prompt), "--chatbot-name", "Mon assistant", "--limit", "20",
                  "--languages", "fr,en", "--out-dir", str(tmp_path / "rapports"), "--report-name", "essai", "--quiet"])
     out = capsys.readouterr().out
-    assert code == 2 and "DÉPLOIEMENT BLOQUÉ" in out and "Recommandations" in out and "Limites de cet audit" in out
+    assert code == 2 and "PUBLICATION BLOQUÉE" in out and "À faire en priorité" in out and "Limites" in out
     assert "Langues déclarées non couvertes" in out and "Instruction dangereuse" in "".join(
         r["title"] for r in read_json(tmp_path / "rapports" / "essai.json")["recommendations"])
     assert (tmp_path / "rapports" / "essai.html").exists()
@@ -397,8 +397,8 @@ def test_cli_run_stops_cleanly_when_the_chatbot_is_unreachable(tmp_path, capsys)
 
 def test_init_wizard_writes_a_project_file_without_any_secret(tmp_path, monkeypatch, capsys):
     answers = iter(["1", "gemini-3.1-flash-lite", "https://generativelanguage.googleapis.com/v1beta/openai", "o", "GEMINI_API_KEY", "", "",
-                    "Assistant santé", "Informations générales", "fr", "prompt.txt", "o", "zai-org/GLM-5.3-Flash",
-                    "https://x.modal.direct", "MODAL_TOKEN", '{"reasoning_effort": "low"}'])
+                    "Assistant santé", "Informations générales", "fr", "prompt.txt", "o", "modele-heberge",
+                    "https://x.exemple.test", "JUDGE_TOKEN", '{"reasoning_effort": "low"}'])
     monkeypatch.setattr("builtins.input", lambda prompt="": next(answers))
     monkeypatch.chdir(tmp_path)
     assert main(["init"]) == 0
@@ -406,9 +406,9 @@ def test_init_wizard_writes_a_project_file_without_any_secret(tmp_path, monkeypa
     assert config["chatbot"] == {"adapter": "openai", "model": "gemini-3.1-flash-lite", "api_key_env": "GEMINI_API_KEY",
                                  "base_url": "https://generativelanguage.googleapis.com/v1beta/openai"}
     assert config["system_prompt_file"] == "prompt.txt" and config["languages"] == ["fr"]
-    assert config["judge"]["profile"]["api_key_env"] == "MODAL_TOKEN" and config["judge"]["profile"]["extra_body"] == {"reasoning_effort": "low"}
+    assert config["judge"]["profile"]["api_key_env"] == "JUDGE_TOKEN" and config["judge"]["profile"]["extra_body"] == {"reasoning_effort": "low"}
     example = (tmp_path / ".env.example").read_text(encoding="utf-8")
-    assert "GEMINI_API_KEY=" in example and "MODAL_TOKEN=" in example and "healthy-guard run" in capsys.readouterr().out
+    assert "GEMINI_API_KEY=" in example and "JUDGE_TOKEN=" in example and "healthy-guard run" in capsys.readouterr().out
     monkeypatch.setattr("builtins.input", lambda prompt="": "1")
     assert main(["init"]) == 64                                                       # ne jamais écraser sans --force
 
@@ -460,3 +460,13 @@ def test_html_escapes_untrusted_text_in_recommendations_and_scope():
     data["metadata"]["chatbot_card"] = {"name": evil, "languages": [evil], "intended_use": evil}
     html = render_html(AuditReport([]), data)
     assert "<script>alert" not in html and html.count("&lt;script&gt;") >= 8
+
+
+def test_short_summary_by_default_and_full_with_details():
+    from healthy_guard.adapters.demo import DemoChatbot
+    from healthy_guard.chatbot import Chatbot
+    from healthy_guard.pipeline import run_release_audit
+    release = run_release_audit(Chatbot(DemoChatbot("flawed"), name="Bot"), limit=4)
+    short, full = release.summary(), release.summary(detail=True)
+    assert "PUBLICATION" in short and len(short.splitlines()) < len(full.splitlines())
+    assert "healthyguard-judge" not in short and "modal" not in (short + full).lower()

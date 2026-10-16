@@ -56,7 +56,10 @@ class Release:
     def exit_code(self) -> int:
         return EXIT_CODES[Decision(self.decision)] if self.report else EXIT_NOT_READY
 
-    def summary(self, max_recommendations: int = 5) -> str:
+    def summary(self, max_recommendations: int = 5, detail: bool = False) -> str:
+        """Aperçu. Par défaut COURT : décision, une ligne par pilier, les actions prioritaires, l'emplacement du rapport. `detail=True` : tout."""
+        if not detail and self.ready:
+            return self._short(min(max_recommendations, 3))
         lines = [f"== {self.chatbot.name} =="]
         lines += ["", "Connexion :", format_findings(self.connection)]
         if not self.ready:
@@ -75,6 +78,27 @@ class Release:
             lines += ["", "Limites de cet audit :"] + [f"  - {x}" for x in self.scope["limits"]]
         if self.paths:
             lines += ["", "Rapports : " + " ; ".join(str(p) for p in self.paths.values())]
+        return "\n".join(lines)
+
+
+    def _short(self, max_recommendations: int) -> str:
+        decision = {"pass": "PUBLICATION POSSIBLE", "review_required": "RELECTURE HUMAINE REQUISE AVANT PUBLICATION",
+                    "blocked": "PUBLICATION BLOQUÉE"}[self.decision]
+        lines = [f"== {self.chatbot.name} : {decision} ==", ""]
+        reading = self.report["stats"].get("interpretation", {}).get("pillars", {})
+        for pillar in reading.values():
+            lines.append(f"  {pillar['label']:<30} {pillar['level']}")
+        problems = [f for f in self.connection if f.level != "ok"]
+        if problems:
+            lines += ["", "Connexion : " + " ; ".join(f.title for f in problems[:2])]
+        if self.recommendations:
+            lines += ["", "À faire en priorité :"]
+            for i, rec in enumerate(self.recommendations[:max_recommendations], 1):
+                lines.append(f"  {i}. [{rec['priority']}] {rec['title']}")
+        if self.scope.get("limits"):
+            lines += ["", "Limites : " + " ".join(self.scope["limits"][:2])]
+        if self.paths:
+            lines += ["", "Détail complet : " + str(self.paths.get("html") or next(iter(self.paths.values())))]
         return "\n".join(lines)
 
 

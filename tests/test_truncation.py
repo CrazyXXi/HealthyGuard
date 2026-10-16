@@ -1,4 +1,4 @@
-"""Une réponse vide ou coupée n'est pas une décision du chatbot (cas réel : GLM dépense tout son budget en raisonnement)."""
+"""Une réponse vide ou coupée n'est pas une décision du chatbot (cas réel : le juge dépense tout son budget en raisonnement)."""
 import pytest
 
 from healthy_guard.adapters.base import ChatbotAdapter, ChatResponse

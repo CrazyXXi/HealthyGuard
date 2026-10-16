@@ -20,7 +20,7 @@ from healthy_guard.adapters.web import (AdapterError, AnthropicAdapter, HttpJson
                                         OpenAICompatibleAdapter, RestBotAdapter)
 from healthy_guard.adapters.config import build_chatbot, load_chatbots
 from healthy_guard.adapters.plugin import CommandAdapter, load_callable, load_plugin
-from healthy_guard.api import llm_adapter_of
+from healthy_guard.api import default_judge, llm_adapter_of
 from healthy_guard.interpretation import format_interpretation
 from healthy_guard.manual import DEFAULT_LIMIT, export_scenarios, instructions, load_answers
 from healthy_guard.auditor import ALL_PILLARS, Auditor
@@ -255,6 +255,7 @@ def add_run_arguments(parser) -> None:
     group.add_argument("--prompt-review-llm", action="store_true",
                        help="faire aussi relire le prompt par le modèle juge (le texte du prompt lui est alors envoyé)")
     group.add_argument("--quiet", action="store_true", help="ne pas afficher la progression")
+    group.add_argument("--details", action="store_true", help="afficher le détail complet à l'écran (par défaut : un aperçu court ; tout est dans le rapport)")
 
 
 def add_network_arguments(parser) -> None:
@@ -500,6 +501,10 @@ def make_judge(args) -> Judge:
             raise ConfigError("--judge-panel exige au moins 2 juges.")
         return PanelJudge(members, args.panel_policy)
 
+    if not (args.judge or args.judge_provider or args.judge_profile):
+        default = default_judge()
+        if default is not None:
+            return default
     mode = args.judge or ("llm" if (args.judge_provider or args.judge_profile) else "keyword")
     if mode == "keyword":
         return KeywordJudge()
@@ -830,7 +835,12 @@ def cmd_run(args) -> int:
 
     adapter = make_chatbot(args)
     has_judge = bool(args.judge or args.judge_panel or args.judge_profile or args.judge_provider or getattr(args, "judge_inline", None))
-    judge = make_judge(args) if has_judge else KeywordJudge()
+    if has_judge:
+        judge = make_judge(args)
+    else:
+        judge = default_judge()                  # juge intégré (service hébergé) quand il est configuré
+        has_judge = judge is not None
+        judge = judge or KeywordJudge()
     system_prompt = args.system
     if args.system_file:
         try:
@@ -846,7 +856,7 @@ def cmd_run(args) -> int:
 
     warnings = independence_warnings(adapter, judge)
     if not has_judge:
-        warnings.append("Jugement par règles seules : approximatif. Donnez un modèle comme juge (--judge-profile, ou `init`) pour un vrai audit.")
+        warnings.append("Jugement par règles seules : approximatif. Le juge intégré n'est pas configuré (HEALTHYGUARD_JUDGE_URL) : donnez un juge (--judge-profile, ou `init`) pour un vrai audit.")
     for warning in warnings:
         print(f"ATTENTION : {warning}", file=sys.stderr)
 
@@ -865,7 +875,7 @@ def cmd_run(args) -> int:
         max_major_fails=args.max_major_fails, check_connection=not args.skip_check, review_system_prompt=not args.no_prompt_review,
         prompt_reviewer=llm_adapter_of(judge) if args.prompt_review_llm else None, extra_cases=extra_cases, extra_info=extra_info,
         warnings=warnings, output_dir=args.out_dir or "reports", name=args.report_name, progress=progress)
-    print(release.summary())
+    print(release.summary(detail=getattr(args, 'details', False)))
     return release.exit_code
 
 
@@ -888,7 +898,7 @@ def cmd_init(args) -> int:
         raise ConfigError(f"{target} existe déjà (utilisez --force pour l'écraser).")
     print("Assistant HealthyGuard : décrivons votre chatbot. Aucun secret n'est demandé : seulement le NOM des variables qui les contiennent.\n")
     kinds = {"1": "openai", "2": "anthropic", "3": "rest", "4": "http", "5": "python", "6": "command", "7": "plugin"}
-    print("Comment votre chatbot est-il appelé ?\n  1) Modèle de langage derrière une API compatible OpenAI (OpenAI, Gemini, GLM/Modal, vLLM…)\n"
+    print("Comment votre chatbot est-il appelé ?\n  1) Modèle de langage derrière une API compatible OpenAI (OpenAI, Gemini, vLLM…)\n"
           "  2) Anthropic (Claude)\n  3) Chatbot classique REST (Rasa, Botpress, Dialogflow, maison…)\n"
           "  4) API qui reçoit la liste des messages (JSON)\n  5) Fonction Python\n  6) Commande\n  7) Classe Python personnalisée")
     kind = kinds.get(_ask("Votre choix (1-7)", "1"), "openai")
