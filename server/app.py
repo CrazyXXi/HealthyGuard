@@ -65,15 +65,14 @@ def _client_id(request: Request) -> str:
     return (forwarded.split(",")[0].strip() or (request.client.host if request.client else "?"))
 
 
-@app.get("/health")
-@app.get("/api/health")
-async def health():
+# Les hébergeurs « serverless » réécrivent parfois le chemin (/api/index...) : la passerelle n'a qu'un rôle par méthode, donc elle ne dépend pas du chemin.
+@app.get("/{path:path}")
+async def health(path: str = ""):
     return {"status": "ok"}
 
 
-@app.post("/v1/chat/completions")
-@app.post("/api/v1/chat/completions")
-async def completions(request: Request):
+@app.post("/{path:path}")
+async def completions(request: Request, path: str = ""):
     keys = _allowed_keys()
     if keys and request.headers.get("authorization", "").removeprefix("Bearer ").strip() not in keys:
         raise HTTPException(401, "Clé HealthyGuard requise ou invalide.")

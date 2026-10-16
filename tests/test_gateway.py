@@ -105,6 +105,8 @@ def test_health_and_vercel_paths(gateway):
     client, _ = gateway
     assert client.get("/health").json() == {"status": "ok"}
     assert client.post("/api/v1/chat/completions", json=MESSAGES).status_code == 200
+    assert client.post("/api/index", json=MESSAGES).status_code == 200        # chemin réécrit par l'hébergeur
+    assert client.get("/api/index").json() == {"status": "ok"}
 
 
 def test_the_package_judge_works_through_the_gateway(gateway, monkeypatch):
