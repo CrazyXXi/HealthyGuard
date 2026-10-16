@@ -117,7 +117,7 @@ def assisted_judge(profile: dict | ChatbotAdapter, *, rules: bool = True, escala
 
 # Le juge intégré : un service hébergé pour HealthyGuard (voir server/app.py). Le package ne contient AUCUN jeton ni nom de modèle :
 # l'adresse de la passerelle est publique et sans secret. Elle se règle une fois déployée (ou par HEALTHYGUARD_JUDGE_URL).
-HOSTED_JUDGE_URL = ""
+HOSTED_JUDGE_URL = "https://healthy-guard.vercel.app"
 JUDGE_ALIAS = "healthyguard-judge"
 
 
@@ -163,6 +163,8 @@ def audit(chatbot, *, system_prompt: str | None = None, system_prompt_file: str 
     `card` : nom, description, usage prévu, public, langues, outils : `Chatbot(name=..., intended_use=..., languages=..., tools=...)`.
     Sans `judge`, le jugement se fait par règles seules : gratuit mais approximatif ; donnez un modèle (`assisted_judge`) pour un vrai audit.
     """
+    if name != "audit":
+        card.setdefault("name", name)              # `name` nomme le rapport ET, à défaut de fiche, le chatbot
     subject = as_chatbot(chatbot, system_prompt, str(system_prompt_file) if system_prompt_file else None, **card)
     warnings = []
     if judge is None:

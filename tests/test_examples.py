@@ -17,3 +17,11 @@ def test_quickstart_example_runs_without_key_or_network(tmp_path, monkeypatch, c
 def test_other_examples_are_valid_python():
     for path in (ROOT / "examples").glob("*.py"):
         compile(path.read_text(encoding="utf-8"), str(path), "exec")
+
+
+def test_audit_name_is_used_as_chatbot_name(tmp_path, monkeypatch):
+    import healthy_guard as hg
+    monkeypatch.setenv("HEALTHYGUARD_JUDGE_URL", "")
+    monkeypatch.setattr("healthy_guard.api.HOSTED_JUDGE_URL", "")
+    release = hg.audit(hg.demo_chatbot("good"), name="Mon assistant", limit=2, verbose=False, output_dir=tmp_path)
+    assert release.chatbot.name == "Mon assistant"
