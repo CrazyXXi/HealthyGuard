@@ -21,6 +21,7 @@ from healthy_guard.checkbot import Finding, diagnose, format_findings, is_usable
 from healthy_guard.judges.base import Judge
 from healthy_guard.models import Decision, Pillar
 from healthy_guard.promptreview import PromptFinding, review_prompt, review_with_llm
+from healthy_guard.interpretation import format_failures, format_pillar_table
 from healthy_guard.recommendations import SEVERITY_RANK, SUGGESTION_NOTE, build_recommendations, format_recommendations
 from healthy_guard.reporting.html_report import write_html
 from healthy_guard.reporting.json_report import report_to_dict, write_json
@@ -81,13 +82,17 @@ class Release:
         return "\n".join(lines)
 
 
-    def _short(self, max_recommendations: int) -> str:
+    def _short(self, max_recommendations: int, failures: int = 6) -> str:
         decision = {"pass": "PUBLICATION POSSIBLE", "review_required": "RELECTURE HUMAINE REQUISE AVANT PUBLICATION",
                     "blocked": "PUBLICATION BLOQUÉE"}[self.decision]
         lines = [f"== {self.chatbot.name} : {decision} ==", ""]
+        lines += [format_pillar_table(self.report["stats"]), ""]
+        lines += [format_failures(self.report["results"], limit=failures), ""]
         reading = self.report["stats"].get("interpretation", {}).get("pillars", {})
-        for pillar in reading.values():
-            lines.append(f"  {pillar['label']:<30} {pillar['level']}")
+        weak = [f"{p['label']} : " + ", ".join(f"{w['category']} ({w['failures']}" + (f"/{w['cases']}" if w["cases"] else "") + ")"
+                for w in p["weak_points"]) for p in reading.values() if p["weak_points"]]
+        if weak:
+            lines += ["Catégories les plus en échec :"] + [f"  {w}" for w in weak] + [""]
         problems = [f for f in self.connection if f.level != "ok"]
         if problems:
             lines += ["", "Connexion : " + " ; ".join(f.title for f in problems[:2])]

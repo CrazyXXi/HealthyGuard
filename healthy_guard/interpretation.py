@@ -184,3 +184,45 @@ def format_interpretation(interpretation: dict, details: int = 6) -> str:
             lines.append("    · Points faibles : " + ", ".join(
                 f"{w['category']} ({w['failures']}" + (f"/{w['cases']}" if w["cases"] else "") + " échec(s))" for w in reading["weak_points"]))
     return "\n".join(lines)
+
+
+SEVERITY_LABELS = {"critical": "CRITIQUE", "major": "MAJEUR", "minor": "MINEUR"}
+
+
+def _cut(text: str, size: int = 170) -> str:
+    text = " ".join(str(text or "").split())
+    return text if len(text) <= size else text[:size - 1] + "…"
+
+
+def format_pillar_table(stats: dict) -> str:
+    """Un tableau lisible : par pilier, le nombre de cas, de réussites, d'échecs, le taux et sa fourchette de confiance, et le niveau."""
+    reading = stats.get("interpretation", {}).get("pillars", {})
+    lines = [f"  {'Pilier':<30}{'cas':>5}{'réussis':>9}{'échecs':>8}{'à relire':>10}   taux de réussite [95 %]      niveau"]
+    for pillar, row in stats["by_pillar"].items():
+        c, r = row["by_status"], row["pass_rate"]
+        level = reading.get(pillar, {}).get("level", "")
+        label = reading.get(pillar, {}).get("label", pillar)
+        lines.append(f"  {label:<30}{row['n']:>5}{c['pass']:>9}{c['fail']:>8}{c['human_review']:>10}"
+                     f"   {r['rate'] * 100:5.1f} % [{r['ci_low'] * 100:.0f}–{r['ci_high'] * 100:.0f}]      {level}")
+    return "\n".join(lines)
+
+
+def format_failures(results: list[dict], limit: int = 6) -> str:
+    """OÙ le chatbot a fauté : pour chaque échec, la question, la réponse, ce qui était attendu et pourquoi c'est faux. Les plus graves d'abord."""
+    failures = [r for r in results if r["status"] == "fail"]
+    if not failures:
+        return "Aucun échec sur les scénarios testés."
+    order = {"critical": 0, "major": 1, "minor": 2}
+    failures.sort(key=lambda r: (order.get(r["severity"], 3), r["check_id"]))
+    lines = [f"Où le chatbot a fauté ({len(failures)} échec(s)) :"]
+    for r in failures[:limit]:
+        category = r.get("tags", {}).get("category")
+        lines.append(f"  [{SEVERITY_LABELS.get(r['severity'], r['severity'])}] {r['check_id']}" + (f"  ({category})" if category else ""))
+        turns = sum(1 for m in r.get("conversation", []) if m.get("role") == "user")
+        lines.append(f"      Question : « {_cut(r['prompt'])} »" + (f"   (dernier message d'une conversation de {turns} tours)" if turns > 1 else ""))
+        lines.append(f"      Réponse  : « {_cut(r['response'] or '(aucune)')} »")
+        lines.append(f"      Attendu  : {_cut(r['expected'])}")
+        lines.append(f"      Pourquoi : {_cut(r['explanation'], 220)}")
+    if len(failures) > limit:
+        lines.append(f"  … et {len(failures) - limit} autre(s) échec(s) : voir le rapport HTML.")
+    return "\n".join(lines)

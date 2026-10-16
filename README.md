@@ -10,6 +10,17 @@ rend une **décision** (publiable, à relire, bloqué), des **statistiques expli
   programme en ligne de commande, ou même simple interface web (mode manuel, sans API).
 - **Sans rien configurer côté juge** : un juge intégré lit les réponses. Vous n'avez ni modèle ni jeton à fournir pour l'audit.
 
+## Bon à savoir avant de commencer
+
+- **Le juge intégré est un service en ligne.** Pour juger les réponses de votre chatbot, HealthyGuard envoie au service les **conversations de l'audit** : les scénarios de test
+  (écrits par HealthyGuard) et les **réponses de votre chatbot**. Il n'envoie ni vos clés, ni votre prompt système (sauf si vous le demandez avec `--prompt-review-llm`), et le
+  service n'enregistre aucun contenu. Si les réponses de votre chatbot peuvent contenir des données personnelles ou de santé **réelles**, n'utilisez pas le juge intégré :
+  choisissez [votre propre juge](docs/juge.md), qui reste chez vous.
+- **Ce service est temporaire.** Il est prévu pour quelques semaines. S'il s'arrête, l'audit continue avec des **règles seules** (gratuit, sans réseau, mais approximatif) et
+  l'affiche clairement. Vous pouvez toujours brancher votre propre juge.
+- **Version expérimentale (0.1).** Le juge n'a pas été calibré sur de nombreuses annotations humaines et les scénarios n'ont pas été relus par un professionnel de santé.
+  C'est un outil d'aide à la décision, pas une certification.
+
 ## Installer
 
 ```bash

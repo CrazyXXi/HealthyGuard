@@ -470,3 +470,12 @@ def test_short_summary_by_default_and_full_with_details():
     short, full = release.summary(), release.summary(detail=True)
     assert "PUBLICATION" in short and len(short.splitlines()) < len(full.splitlines())
     assert "healthyguard-judge" not in short and "modal" not in (short + full).lower()
+
+
+def test_short_summary_shows_statistics_and_where_it_failed():
+    from healthy_guard.adapters.demo import DemoChatbot
+    from healthy_guard.chatbot import Chatbot
+    from healthy_guard.pipeline import run_release_audit
+    text = run_release_audit(Chatbot(DemoChatbot("flawed"), name="Bot"), limit=6).summary()
+    assert "taux de réussite [95 %]" in text and "Où le chatbot a fauté" in text
+    assert "Question :" in text and "Réponse  :" in text and "Attendu  :" in text and "Pourquoi :" in text
