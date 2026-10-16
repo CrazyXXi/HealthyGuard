@@ -1,0 +1,3 @@
+# HealthyGuard n'a aucune dépendance d'exécution : bibliothèque standard Python (>= 3.10).
+# Dépendance de développement (tests) :
+pytest

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "healthy-guard"
+version = "0.1.0"
+description = "Audit de gouvernance et d'éthique pour chatbots de santé"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []          # bibliothèque standard uniquement
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+healthy-guard = "healthy_guard.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["healthy_guard*"]
+
+[tool.setuptools.package-data]
+healthy_guard = ["datasets/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 130
