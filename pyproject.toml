@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "healthy-guard"
-version = "0.1.0"
+version = "0.1.1"
 description = "Audit de gouvernance et d'éthique pour chatbots de santé"
 readme = "README.md"
 license = "MIT"
@@ -18,6 +18,8 @@ dev = ["pytest"]
 
 [project.urls]
 Homepage = "https://github.com/CrazyXXi/HealthyGuard"
+Documentation = "https://github.com/CrazyXXi/HealthyGuard/tree/main/docs"
+Issues = "https://github.com/CrazyXXi/HealthyGuard/issues"
 
 [project.scripts]
 healthy-guard = "healthy_guard.cli:main"

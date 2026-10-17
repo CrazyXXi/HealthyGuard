@@ -15,7 +15,7 @@ rend une **décision** (publiable, à relire, bloqué), des **statistiques expli
 - **Le juge intégré est un service en ligne.** Pour juger les réponses de votre chatbot, HealthyGuard envoie au service les **conversations de l'audit** : les scénarios de test
   (écrits par HealthyGuard) et les **réponses de votre chatbot**. Il n'envoie ni vos clés, ni votre prompt système (sauf si vous le demandez avec `--prompt-review-llm`), et le
   service n'enregistre aucun contenu. Si les réponses de votre chatbot peuvent contenir des données personnelles ou de santé **réelles**, n'utilisez pas le juge intégré :
-  choisissez [votre propre juge](docs/juge.md), qui reste chez vous.
+  choisissez [votre propre juge](https://github.com/CrazyXXi/HealthyGuard/blob/main/docs/juge.md), qui reste chez vous.
 - **Ce service est temporaire.** Il est prévu pour quelques semaines. S'il s'arrête, l'audit continue avec des **règles seules** (gratuit, sans réseau, mais approximatif) et
   l'affiche clairement. Vous pouvez toujours brancher votre propre juge.
 - **Version expérimentale (0.1).** Le juge n'a pas été calibré sur de nombreuses annotations humaines et les scénarios n'ont pas été relus par un professionnel de santé.
@@ -38,7 +38,7 @@ release = hg.audit(hg.demo_chatbot("flawed"), limit=8)
 ```
 
 ou en ligne de commande : `healthy-guard run --adapter demo-flawed --limit 8`. Vous verrez la décision, un niveau par pilier, les actions prioritaires et
-l'emplacement du rapport HTML. D'autres exemples prêts à copier sont dans [examples/](examples/).
+l'emplacement du rapport HTML. D'autres exemples prêts à copier sont dans [examples/](https://github.com/CrazyXXi/HealthyGuard/tree/main/examples/).
 
 ## Auditer votre chatbot
 
@@ -88,29 +88,29 @@ Détail complet : reports/audit.html
 
 Dans le rapport HTML et JSON : une lecture en phrases de chaque pilier (niveau, fiabilité du chiffre, points faibles), les statistiques avec intervalles de
 confiance, les écarts entre profils, les recommandations avec un paragraphe de prompt à copier, le périmètre couvert et non couvert, et un fichier signé
-(SHA-256) pour vérifier que le rapport n'a pas été modifié. Voir [lire les résultats](docs/lire-les-resultats.md).
+(SHA-256) pour vérifier que le rapport n'a pas été modifié. Voir [lire les résultats](https://github.com/CrazyXXi/HealthyGuard/blob/main/docs/lire-les-resultats.md).
 
 ## Documentation
 
 | Guide | Contenu |
 |---|---|
-| [Démarrage](docs/demarrage.md) | Installer, premier audit, comprendre la décision |
-| [Connecter votre chatbot](docs/connecter-votre-chatbot.md) | API, modèle local, serveur maison, Rasa, fonction, commande, mode manuel sans API |
-| [Piliers et scénarios](docs/piliers-et-scenarios.md) | Ce qui est testé, comment sont écrits les scénarios, ajouter les vôtres |
-| [Lire les résultats](docs/lire-les-resultats.md) | Statuts, décision, statistiques, niveaux, fiabilité |
-| [Le juge](docs/juge.md) | Comment les réponses sont jugées, relecture humaine, juge personnalisé |
-| [Héberger le juge intégré](docs/heberger-le-juge.md) | Pour les mainteneurs : déployer la passerelle, sécurité des identifiants |
-| [Référence ligne de commande](docs/reference-cli.md) | Toutes les commandes |
-| [Référence Python](docs/reference-api.md) | Toutes les fonctions de `healthy_guard` |
-| [Limites et questions fréquentes](docs/limites-et-faq.md) | Ce que l'outil ne fait pas, erreurs courantes |
-| [Référence avancée](docs/avance.md) | Jurys, calibration, comparaison de versions, audit par morceaux |
+| [Démarrage](https://github.com/CrazyXXi/HealthyGuard/blob/main/docs/demarrage.md) | Installer, premier audit, comprendre la décision |
+| [Connecter votre chatbot](https://github.com/CrazyXXi/HealthyGuard/blob/main/docs/connecter-votre-chatbot.md) | API, modèle local, serveur maison, Rasa, fonction, commande, mode manuel sans API |
+| [Piliers et scénarios](https://github.com/CrazyXXi/HealthyGuard/blob/main/docs/piliers-et-scenarios.md) | Ce qui est testé, comment sont écrits les scénarios, ajouter les vôtres |
+| [Lire les résultats](https://github.com/CrazyXXi/HealthyGuard/blob/main/docs/lire-les-resultats.md) | Statuts, décision, statistiques, niveaux, fiabilité |
+| [Le juge](https://github.com/CrazyXXi/HealthyGuard/blob/main/docs/juge.md) | Comment les réponses sont jugées, relecture humaine, juge personnalisé |
+| [Héberger le juge intégré](https://github.com/CrazyXXi/HealthyGuard/blob/main/docs/heberger-le-juge.md) | Pour les mainteneurs : déployer la passerelle, sécurité des identifiants |
+| [Référence ligne de commande](https://github.com/CrazyXXi/HealthyGuard/blob/main/docs/reference-cli.md) | Toutes les commandes |
+| [Référence Python](https://github.com/CrazyXXi/HealthyGuard/blob/main/docs/reference-api.md) | Toutes les fonctions de `healthy_guard` |
+| [Limites et questions fréquentes](https://github.com/CrazyXXi/HealthyGuard/blob/main/docs/limites-et-faq.md) | Ce que l'outil ne fait pas, erreurs courantes |
+| [Référence avancée](https://github.com/CrazyXXi/HealthyGuard/blob/main/docs/avance.md) | Jurys, calibration, comparaison de versions, audit par morceaux |
 
 ## Limites à connaître
 
 HealthyGuard observe des **réponses**. Il ne voit ni votre base de connaissances, ni la conservation des données, ni la sécurité de votre infrastructure, et il
 ne remplace ni une relecture par un professionnel de santé, ni une analyse de conformité (RGPD, dispositif médical). Les scénarios sont écrits en français.
-Un audit sur peu de cas donne des conclusions fragiles : il en faut au moins 30 par pilier pour un résultat solide. Détails : [limites et FAQ](docs/limites-et-faq.md).
+Un audit sur peu de cas donne des conclusions fragiles : il en faut au moins 30 par pilier pour un résultat solide. Détails : [limites et FAQ](https://github.com/CrazyXXi/HealthyGuard/blob/main/docs/limites-et-faq.md).
 
 ## Licence
 
-MIT, voir [LICENSE](LICENSE).
+MIT, voir [LICENSE](https://github.com/CrazyXXi/HealthyGuard/blob/main/LICENSE).
